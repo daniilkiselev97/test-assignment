@@ -7,9 +7,15 @@
   </div>
 
   <div class="dropdown-panel" *ngIf="isOpen">
+    <input
+    *ngIf="enableSearch"
+    type="text"
+    placeholder="Поиск..."
+    [formControl]="searchControl"
+    />
     <div
       class="dropdown-item"
-      *ngFor="let item of items"
+      *ngFor="let item of filteredItems"
       (click)="select(item)"
       [class.selected]="isSelected(item.value)"
     >

@@ -1,16 +1,20 @@
-import { Component, ElementRef, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, OnInit, Output, signal, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
   selector: 'dropdown',
-  imports: [CommonModule],
+  imports: [CommonModule, ReactiveFormsModule],
   templateUrl: './dropdown.html',
   styleUrl: './dropdown.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class Dropdown {
   @Input() items: { label: string, value: string }[] = [];
   @Input() placeholder = 'Выберите элемент';
   @Input() mode: 'single' | 'multi' = 'single'
+  @Input() enableSearch: boolean = false
 
   @Output() change = new EventEmitter<string[]>();
 
@@ -23,11 +27,22 @@ export class Dropdown {
 
   public isOpen = false;
   public selectedValues: string[] = [];
+  public searchControl = new FormControl('')
+
+  public get filteredItems() {
+    const term = this.searchControl.value?.toLowerCase() || ''
+    return !term ? [...this.items] : this.items.filter(i => i.label.toLowerCase().includes(term))
+  }
 
   constructor(private _el: ElementRef) { }
 
+
   public toggle(): void {
     this.isOpen = !this.isOpen;
+
+    if (this.isOpen && this.enableSearch) {
+      this.searchControl.setValue('')
+    }
   }
 
   public select(item: { label: string, value: string }): void {

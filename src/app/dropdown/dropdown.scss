@@ -25,6 +25,14 @@
   border: 1px solid #ccc;
   background: #fff;
   z-index: 100;
+  & input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 6px 10px;
+    margin-bottom: 4px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
 }
 
 .dropdown-item {
