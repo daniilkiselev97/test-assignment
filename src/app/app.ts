@@ -10,7 +10,7 @@ import { districts } from './data';
   styleUrl: './app.scss',
 })
 export class App {
-  selectedItem: any = null;
+  selectedItem: string[] = [];
 
   readonly items = districts;
 }

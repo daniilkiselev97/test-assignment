@@ -1,14 +1,19 @@
 <div class="dropdown">
   <div class="dropdown-header" (click)="toggle()">
     <span>
-      {{ selectedItem?.label || placeholder }}
+      {{ getHeaderLabel() }}
     </span>
     <span class="arrow">▼</span>
   </div>
 
   <div class="dropdown-panel" *ngIf="isOpen">
-    <div class="dropdown-item" *ngFor="let item of items" (click)="select(item)">
-      {{ item.label }}
+    <div
+      class="dropdown-item"
+      *ngFor="let item of items"
+      (click)="select(item)"
+      [class.selected]="isSelected(item.value)"
+    >
+      <span class="item-label">{{ item.label }}</span>
     </div>
   </div>
 </div>
