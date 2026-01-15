@@ -46,7 +46,13 @@ export class Dropdown {
 
   public getHeaderLabel(): string {
     if (!this.selectedValues.length) return this.placeholder
-    return this.items.filter(i => this.selectedValues.includes(i.value)).map(i => i.label).join(', ')
+    if (this.selectedValues.length === 1) {
+      const item = this.items.find(i => i.value === this.selectedValues[0])
+      return item?.label || ''
+    }
+    const firstItem = this.items.find(i => i.value === this.selectedValues[0])
+    const otherCounts = this.selectedValues.length - 1
+    return `${firstItem?.label || ''} +${otherCounts}`
   }
 
   public isSelected(item: string): boolean {
