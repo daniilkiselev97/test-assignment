@@ -1,6 +1,6 @@
-import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, OnInit, Output, signal, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormControl, FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 
 @Component({
@@ -10,7 +10,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs';
   styleUrl: './dropdown.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class Dropdown {
+export class Dropdown implements OnInit {
   @Input() items: { label: string, value: string }[] = [];
   @Input() placeholder = 'Выберите элемент';
   @Input() mode: 'single' | 'multi' = 'single'
@@ -28,13 +28,22 @@ export class Dropdown {
   public isOpen = false;
   public selectedValues: string[] = [];
   public searchControl = new FormControl('')
+  public filteredItems: { label: string, value: string }[] = []
 
-  public get filteredItems() {
-    const term = this.searchControl.value?.toLowerCase() || ''
-    return !term ? [...this.items] : this.items.filter(i => i.label.toLowerCase().includes(term))
+  constructor(private _el: ElementRef, private _cdr: ChangeDetectorRef) { }
+
+  ngOnInit(): void {
+    this.filteredItems = [...this.items]
+
+    this.searchControl.valueChanges.pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    ).subscribe(term => {
+      const t = (term || '').toLowerCase()
+      this.filteredItems = !t ? [...this.items] : this.items.filter(i => i.label.toLowerCase().includes(t))
+      this._cdr.markForCheck()
+    })
   }
-
-  constructor(private _el: ElementRef) { }
 
 
   public toggle(): void {
