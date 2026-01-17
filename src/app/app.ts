@@ -3,6 +3,7 @@ import { Dropdown } from './dropdown/dropdown';
 import { JsonPipe } from '@angular/common';
 import { districts, areas } from './data';
 import { DropdownGroup, DropdownItem } from './models/dropdown.model';
+import { BehaviorSubject } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -15,6 +16,8 @@ export class App {
   public selectedDistricts: string[] = [];
   public selectedAreas: string[] = [];
 
+  public selectedDistricts$ = new BehaviorSubject<string[]>([])
+
   readonly districts = districts;
   readonly areas = areas;
 
@@ -25,6 +28,10 @@ export class App {
       disabled: this.isIncludes(dis),
       items: this.filterGroupItems(dis)
     }));
+  }
+  public onChangeDistricts(districts: string[]) {
+    this.selectedDistricts = districts
+    this.selectedDistricts$.next(districts)
   }
 
   private isIncludes(dis: DropdownItem): boolean {

@@ -3,7 +3,7 @@
   [items]="districts"
   [mode]="'multi'"
   [enableSearch]="true"
-  (change)="selectedDistricts = $event"
+  (change)="onChangeDistricts($event)"
 ></dropdown>
 
 <h3>Выберите районы</h3>
@@ -12,6 +12,7 @@
   [mode]="'multi'"
   [enableSearch]="true"
   (change)="selectedAreas = $event"
+  [selectedInput$]="selectedDistricts$"
 ></dropdown>
 
 <hr />

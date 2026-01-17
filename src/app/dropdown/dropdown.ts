@@ -1,9 +1,10 @@
-import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, HostListener, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, EventEmitter, HostListener, inject, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Observable } from 'rxjs';
+import { combineLatest, Observable, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith } from 'rxjs/operators';
-import { DropdownGroup, DropdownItem } from '../models/dropdown.model';
+import { DropdownGroup, DropdownItem, FlatItem } from '../models/dropdown.model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'dropdown',
@@ -19,34 +20,126 @@ export class Dropdown {
   @Input() placeholder = 'Выберите элемент';
   @Input() mode: 'single' | 'multi' = 'single';
   @Input() enableSearch = false;
+  @Input() selectedInput$!: Observable<string[]>
 
   @Output() change = new EventEmitter<string[]>();
+
+  @HostListener('document:click', ['$event'])
+  onOutsideClick(event: MouseEvent) {
+    if (!this.el.nativeElement.contains(event.target)) {
+      this.isOpen = false;
+      this.searchControl.setValue('');
+    }
+  }
+
+  @HostListener('keydown', ['$event'])
+  onKeydown(event: KeyboardEvent) {
+    const items = this.flatItems;
+    const length = items.length;
+    if (!length) {
+      return;
+    }
+    switch (event.key) {
+      case 'ArrowDown':
+        this.moveActiveIndex(1)
+        event.preventDefault();
+        break;
+
+      case 'ArrowUp':
+        this.moveActiveIndex(-1)
+        event.preventDefault();
+        break;
+
+      case 'Enter':
+      case ' ':
+        if (this.isOpen && this.activeIndex >= 0) {
+
+          const item = items[this.activeIndex];
+          if (!item.disabled) this.select(item);
+        } else {
+          this.toggle();
+        }
+        event.preventDefault();
+        break;
+
+      case 'Escape':
+        this.isOpen = false;
+        event.preventDefault();
+        break;
+    }
+  }
+  private destroyRef = inject(DestroyRef);
+  private el = inject(ElementRef)
+  private cdk = inject(ChangeDetectorRef)
 
   public isOpen = false;
   public selectedValues: string[] = [];
   public searchControl = new FormControl('');
-
-  public filteredItems$!: Observable<DropdownItem[]>;
-  public filteredGroups$!: Observable<DropdownGroup[]>;
-
-  constructor(private _el: ElementRef) { }
+  public flatItems: FlatItem[] = []
+  public activeIndex: number = -1
+  public filteredItems: DropdownItem[] = []
+  public filteredGroups: DropdownGroup[] = []
 
   ngOnInit(): void {
-    this.filteredItems$ = this.searchControl.valueChanges.pipe(
+    this.searchControl.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged(),
       startWith(''),
-      map(term => this.filterItems(term))
-    );
+      map(term => this.filterItems(term)),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe(items => {
+      this.filteredItems = items
+      this.flatItems = items
+      this.activeIndex = items.length ? 0 : -1
+      this.cdk.markForCheck()
+    })
 
     if (this.groups.length) {
-      this.filteredGroups$ = this.searchControl.valueChanges.pipe(
+      const search$ = this.searchControl.valueChanges.pipe(
         debounceTime(300),
         distinctUntilChanged(),
-        startWith(''),
-        map(term => this.filterGroups(term))
-      );
+        startWith('')
+      )
+
+      combineLatest([search$, this.getSelected()]).pipe(
+        map(([term, selectedDistricts]) => this.filterGroups(term, selectedDistricts)),
+        takeUntilDestroyed(this.destroyRef)
+      ).subscribe(groups => {
+        this.filteredGroups = groups
+        this.flatItems = groups.flatMap(group =>
+          group.items.map(item => ({
+            ...item,
+            disabled: group.disabled
+          }))
+        );
+        this.activeIndex = this.flatItems.length ? 0 : -1
+        this.cdk.markForCheck()
+      })
     }
+  }
+
+  get activeItemId(): string | null {
+    const item = this.flatItems[this.activeIndex];
+    return item ? `option-${item.value}` : null;
+  }
+
+  private getSelected(): Observable<string[]> {
+    return this.selectedInput$ ?? of([])
+  }
+  private moveActiveIndex(step: 1 | -1) {
+    const items = this.flatItems;
+    const length = items.length;
+    if (!length) return;
+
+    let nextIndex = this.activeIndex;
+    let safety = 0;
+    do {
+      nextIndex = (nextIndex + step + length) % length;
+      safety++;
+      if (safety > length) return;
+    } while (items[nextIndex].disabled);
+
+    this.activeIndex = nextIndex;
   }
 
   private filterItems(term: string | null): DropdownItem[] {
@@ -54,29 +147,24 @@ export class Dropdown {
     return !t ? [...this.items] : this.items.filter(i => i.label.toLowerCase().includes(t));
   }
 
-  private filterGroups(term: string | null): DropdownGroup[] {
+  private filterGroups(term: string | null, selectedDistricts: string[]): DropdownGroup[] {
     const t = (term || '').toLowerCase();
-    return !t
-      ? [...this.groups]
-      : this.groups
-        .map(group => ({
-          ...group,
-          items: this.filterGroupItems(group.items, t)
-        }))
-        .filter(group => group.items.length);
+    return this.groups
+      .map(group => ({
+        ...group,
+        disabled: this.isIncludesGroup(selectedDistricts, group.value),
+        items: t ? this.filterGroupItems(group.items, t) : [...group.items]
+      }))
+      .filter(group => group.items.length);
   }
+
+  private isIncludesGroup(selectedDistricts: string[], val: string): boolean {
+    return !selectedDistricts.includes(val)
+  }
+
 
   private filterGroupItems(items: DropdownItem[], term: string): DropdownItem[] {
     return items.filter(item => item.label.toLowerCase().includes(term));
-  }
-
-
-  @HostListener('document:click', ['$event'])
-  onOutsideClick(event: MouseEvent) {
-    if (!this._el.nativeElement.contains(event.target)) {
-      this.isOpen = false;
-      this.searchControl.setValue('');
-    }
   }
 
   public toggle(): void {

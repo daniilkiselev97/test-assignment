@@ -16,3 +16,6 @@ export interface DropdownArea {
 	district: string
 }
 
+export type FlatItem = DropdownItem & { disabled?: boolean };
+
+
