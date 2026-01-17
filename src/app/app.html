@@ -1,5 +1,20 @@
-<dropdown (change)="selectedItem = $event" [items]="items" [mode]="'multi'" [enableSearch]="true" />
+<h3>Выберите округа</h3>
+<dropdown
+  [items]="districts"
+  [mode]="'multi'"
+  [enableSearch]="true"
+  (change)="selectedDistricts = $event"
+></dropdown>
+
+<h3>Выберите районы</h3>
+<dropdown
+  [groups]="areaGroups"
+  [mode]="'multi'"
+  [enableSearch]="true"
+  (change)="selectedAreas = $event"
+></dropdown>
 
 <hr />
 
-{{ selectedItem | json }}
+<p>Выбранные округа: {{ selectedDistricts | json }}</p>
+<p>Выбранные районы: {{ selectedAreas | json }}</p>

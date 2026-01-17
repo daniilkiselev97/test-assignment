@@ -1,25 +1,36 @@
 <div class="dropdown">
   <div class="dropdown-header" (click)="toggle()">
-    <span>
-      {{ getHeaderLabel() }}
-    </span>
+    <span>{{ getHeaderLabel() }}</span>
     <span class="arrow">▼</span>
   </div>
 
   <div class="dropdown-panel" *ngIf="isOpen">
-    <input
-    *ngIf="enableSearch"
-    type="text"
-    placeholder="Поиск..."
-    [formControl]="searchControl"
-    />
-    <div
-      class="dropdown-item"
-      *ngFor="let item of filteredItems"
-      (click)="select(item)"
-      [class.selected]="isSelected(item.value)"
-    >
-      <span class="item-label">{{ item.label }}</span>
-    </div>
+    <input *ngIf="enableSearch" type="text" [formControl]="searchControl" placeholder="Поиск..." />
+
+    <ng-container *ngIf="!groups.length">
+      <div
+        *ngFor="let item of filteredItems$ | async"
+        class="dropdown-item"
+        (click)="select(item)"
+        [class.selected]="isSelected(item.value)"
+      >
+        {{ item.label }}
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="groups.length">
+      <div *ngFor="let group of filteredGroups$ | async">
+        <div class="dropdown-group-label" [class.disabled]="group.disabled">{{ group.label }}</div>
+        <div
+          *ngFor="let item of group.items"
+          class="dropdown-item"
+          (click)="select(item, group.disabled)"
+          [class.selected]="isSelected(item.value)"
+          [class.disabled]="group.disabled"
+        >
+          {{ item.label }}
+        </div>
+      </div>
+    </ng-container>
   </div>
 </div>
