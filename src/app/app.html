@@ -1,21 +1,30 @@
-<h3>Выберите округа</h3>
-<dropdown
-  [items]="districts"
-  [mode]="'multi'"
-  [enableSearch]="true"
-  (change)="onChangeDistricts($event)"
-></dropdown>
+<main>
+  <section>
+    <h3>Выберите округа</h3>
 
-<h3>Выберите районы</h3>
-<dropdown
-  [groups]="areaGroups"
-  [mode]="'multi'"
-  [enableSearch]="true"
-  (change)="selectedAreas = $event"
-  [selectedInput$]="selectedDistricts$"
-></dropdown>
+    <dropdown
+      [items]="districts"
+      [mode]="'multi'"
+      [enableSearch]="true"
+      (change)="onChangeDistricts($event)"
+    ></dropdown>
+    
+  </section>
 
-<hr />
+  <section>
+    <h3>Выберите районы</h3>
 
-<p>Выбранные округа: {{ selectedDistricts | json }}</p>
-<p>Выбранные районы: {{ selectedAreas | json }}</p>
+    <dropdown
+      [groups]="areaGroups"
+      [mode]="'multi'"
+      [enableSearch]="true"
+      (change)="selectedAreas = $event"
+      [selectedInput$]="selectedDistricts$"
+    ></dropdown>
+
+    <hr />
+
+    <p>Выбранные округа: {{ selectedDistricts | json }}</p>
+    <p>Выбранные районы: {{ selectedAreas | json }}</p>
+  </section>
+</main>
