@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { Dropdown } from './dropdown/dropdown';
 import { JsonPipe } from '@angular/common';
 import { districts, areas } from './data';
@@ -13,7 +13,9 @@ import { BehaviorSubject } from 'rxjs';
   styleUrl: './app.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class App {
+export class App implements OnInit {
+
+
   public selectedDistricts: string[] = [];
   public selectedAreas: string[] = [];
 
@@ -30,9 +32,19 @@ export class App {
       items: this.filterGroupItems(dis)
     }));
   }
+
+  ngOnInit(): void {
+    this.initSelectedDistricts()
+  }
   public onChangeDistricts(districts: string[]) {
     this.selectedDistricts = districts
     this.selectedDistricts$.next(districts)
+  }
+
+  private initSelectedDistricts(): void {
+    const allDistricts = this.districts.map(dis => dis.value)
+    this.selectedDistricts = allDistricts
+    this.selectedDistricts$.next(allDistricts)
   }
 
   private isIncludes(dis: DropdownItem): boolean {

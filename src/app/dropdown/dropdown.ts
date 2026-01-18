@@ -1,9 +1,9 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, EventEmitter, HostListener, inject, Input, Output } from '@angular/core';
-import { CommonModule} from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { combineLatest, Observable, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith } from 'rxjs/operators';
-import { DropdownGroup, DropdownItem, FlatItem } from '../models/dropdown.model';
+import { DropdownGroup, DropdownItem, DropdownMode, FlatItem } from '../models/dropdown.model';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
@@ -18,9 +18,10 @@ export class Dropdown {
   @Input() items: DropdownItem[] = [];
   @Input() groups: DropdownGroup[] = [];
   @Input() placeholder = 'Выберите элемент';
-  @Input() mode: 'single' | 'multi' = 'single';
+  @Input() mode: DropdownMode = 'single';
   @Input() enableSearch = false;
   @Input() selectedInput$!: Observable<string[]>
+  @Input() selectedValues: string[] = []
 
   @Output() change = new EventEmitter<string[]>();
 
@@ -73,7 +74,6 @@ export class Dropdown {
   private cdk = inject(ChangeDetectorRef)
 
   public isOpen = false;
-  public selectedValues: string[] = [];
   public searchControl = new FormControl('');
   public flatItems: FlatItem[] = []
   public activeIndex: number = -1
@@ -81,6 +81,14 @@ export class Dropdown {
   public filteredGroups: DropdownGroup[] = []
 
   ngOnInit(): void {
+    if (this.mode === 'multi' && this.items.length) {
+      this.selectedValues = [...this.selectedValues]
+    } else if (this.mode === 'single' && this.selectedValues.length > 1) {
+      this.selectedValues = [this.selectedValues[0]]
+    }
+    this.cdk.markForCheck()
+    this.change.emit([...this.selectedValues])
+
     this.searchControl.valueChanges.pipe(
       debounceTime(300),
       distinctUntilChanged(),
@@ -112,7 +120,7 @@ export class Dropdown {
             disabled: group.disabled
           }))
         );
-        this.activeIndex = this.flatItems.length ? 0 : -1
+        this.setInitialActiveIndex()
         this.cdk.markForCheck()
       })
     }
@@ -147,6 +155,11 @@ export class Dropdown {
     return !t ? [...this.items] : this.items.filter(i => i.label.toLowerCase().includes(t));
   }
 
+  private setInitialActiveIndex(): void {
+    const firstEnabled = this.flatItems.findIndex(item => !item.disabled)
+    this.activeIndex = firstEnabled >= 0 ? firstEnabled : -1
+  }
+
   private filterGroups(term: string | null, selectedDistricts: string[]): DropdownGroup[] {
     const t = (term || '').toLowerCase();
     return this.groups
@@ -169,7 +182,11 @@ export class Dropdown {
 
   public toggle(): void {
     this.isOpen = !this.isOpen;
-    if (this.isOpen) this.searchControl.setValue('');
+    if (this.isOpen) {
+      this.searchControl.setValue('');
+      this.setInitialActiveIndex()
+      
+    }
   }
 
   public select(item: DropdownItem, disabled = false): void {

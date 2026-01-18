@@ -4,6 +4,7 @@
 
     <dropdown
       [items]="districts"
+      [selectedValues]="selectedDistricts"
       [mode]="'multi'"
       [enableSearch]="true"
       (change)="onChangeDistricts($event)"

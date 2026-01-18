@@ -17,5 +17,6 @@ export interface DropdownArea {
 }
 
 export type FlatItem = DropdownItem & { disabled?: boolean };
+export type DropdownMode = 'single' | 'multi'
 
 
