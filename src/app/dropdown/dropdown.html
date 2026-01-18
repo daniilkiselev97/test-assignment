@@ -4,7 +4,7 @@
     role="combobox"
     tabindex="0"
     aria-haspopup="listbox"
-    [attr.aria-expanded]="isOpen"
+    [attr.aria-expanded]="isOpen()"
     [attr.aria-controls]="'dropdown-panel'"
     [attr.aria-activedescendant]="activeItemId"
     (click)="toggle()"
@@ -12,7 +12,7 @@
     <span>{{ getHeaderLabel() }}</span>
     <span class="arrow">▼</span>
   </div>
-  @if (isOpen) {
+  @if (isOpen()) {
   <div
     class="dropdown-panel"
     role="listbox"
@@ -23,7 +23,7 @@
     <input type="text" [formControl]="searchControl" placeholder="Поиск..." aria-label="Поиск" />
     } 
     @if (!groups.length) { 
-      @for (item of filteredItems; track item.value; let i = $index) {
+      @for (item of filteredItems(); track item.value; let i = $index) {
         <div
           class="dropdown-item"
           role="option"
@@ -31,14 +31,14 @@
           [attr.aria-selected]="isSelected(item.value)"
           (click)="select(item)"
           [class.selected]="isSelected(item.value)"
-          [class.active]="i === activeIndex"
+          [class.active]="i === activeIndex()"
         >
           {{ item.label }}
         </div>
     } 
   }
       @if (groups.length) {
-        @for (group of filteredGroups; track group.value) {
+        @for (group of filteredGroups(); track group.value) {
             <div
               class="dropdown-group-label"
               role="group"

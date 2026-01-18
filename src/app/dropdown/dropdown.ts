@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, EventEmitter, HostListener, inject, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, EventEmitter, HostListener, inject, Input, Output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { combineLatest, Observable, of } from 'rxjs';
@@ -28,7 +28,7 @@ export class Dropdown {
   @HostListener('document:click', ['$event'])
   onOutsideClick(event: MouseEvent) {
     if (!this.el.nativeElement.contains(event.target)) {
-      this.isOpen = false;
+      this.isOpen.set(false);
       this.searchControl.setValue('');
     }
   }
@@ -53,9 +53,9 @@ export class Dropdown {
 
       case 'Enter':
       case ' ':
-        if (this.isOpen && this.activeIndex >= 0) {
+        if (this.isOpen() && this.activeIndex() >= 0) {
 
-          const item = items[this.activeIndex];
+          const item = items[this.activeIndex()];
           if (!item.disabled) this.select(item);
         } else {
           this.toggle();
@@ -64,7 +64,7 @@ export class Dropdown {
         break;
 
       case 'Escape':
-        this.isOpen = false;
+        this.isOpen.set(false);
         event.preventDefault();
         break;
     }
@@ -73,12 +73,12 @@ export class Dropdown {
   private el = inject(ElementRef)
   private cdk = inject(ChangeDetectorRef)
 
-  public isOpen = false;
+  public isOpen = signal(false);
   public searchControl = new FormControl('');
   public flatItems: FlatItem[] = []
-  public activeIndex: number = -1
-  public filteredItems: DropdownItem[] = []
-  public filteredGroups: DropdownGroup[] = []
+  public activeIndex = signal(-1)
+  public filteredItems = signal<DropdownItem[]>([])
+  public filteredGroups = signal<DropdownGroup[]>([])
 
   ngOnInit(): void {
     if (this.mode === 'multi' && this.items.length) {
@@ -96,10 +96,9 @@ export class Dropdown {
       map(term => this.filterItems(term)),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe(items => {
-      this.filteredItems = items
+      this.filteredItems.set(items)
       this.flatItems = items
-      this.activeIndex = items.length ? 0 : -1
-      this.cdk.markForCheck()
+      this.activeIndex.set(items.length ? 0 : -1)
     })
 
     if (this.groups.length) {
@@ -113,7 +112,7 @@ export class Dropdown {
         map(([term, selectedDistricts]) => this.filterGroups(term, selectedDistricts)),
         takeUntilDestroyed(this.destroyRef)
       ).subscribe(groups => {
-        this.filteredGroups = groups
+        this.filteredGroups.set(groups)
         this.flatItems = groups.flatMap(group =>
           group.items.map(item => ({
             ...item,
@@ -121,13 +120,12 @@ export class Dropdown {
           }))
         );
         this.setInitialActiveIndex()
-        this.cdk.markForCheck()
       })
     }
   }
 
   get activeItemId(): string | null {
-    const item = this.flatItems[this.activeIndex];
+    const item = this.flatItems[this.activeIndex()];
     return item ? `option-${item.value}` : null;
   }
 
@@ -139,7 +137,7 @@ export class Dropdown {
     const length = items.length;
     if (!length) return;
 
-    let nextIndex = this.activeIndex;
+    let nextIndex = this.activeIndex();
     let safety = 0;
     do {
       nextIndex = (nextIndex + step + length) % length;
@@ -147,7 +145,7 @@ export class Dropdown {
       if (safety > length) return;
     } while (items[nextIndex].disabled);
 
-    this.activeIndex = nextIndex;
+    this.activeIndex.set(nextIndex);
   }
 
   private filterItems(term: string | null): DropdownItem[] {
@@ -157,7 +155,7 @@ export class Dropdown {
 
   private setInitialActiveIndex(): void {
     const firstEnabled = this.flatItems.findIndex(item => !item.disabled)
-    this.activeIndex = firstEnabled >= 0 ? firstEnabled : -1
+    this.activeIndex.set(firstEnabled >= 0 ? firstEnabled : -1)
   }
 
   private filterGroups(term: string | null, selectedDistricts: string[]): DropdownGroup[] {
@@ -181,8 +179,8 @@ export class Dropdown {
   }
 
   public toggle(): void {
-    this.isOpen = !this.isOpen;
-    if (this.isOpen) {
+    this.isOpen.set(!this.isOpen());
+    if (this.isOpen()) {
       this.searchControl.setValue('');
       this.setInitialActiveIndex()
       
@@ -194,7 +192,7 @@ export class Dropdown {
 
     if (this.mode === 'single') {
       this.selectedValues = [item.value];
-      this.isOpen = false;
+      this.isOpen.set(false);
     } else {
       this.selectedValues = this.selectedValues.includes(item.value)
         ? this.selectedValues.filter(v => v !== item.value)
