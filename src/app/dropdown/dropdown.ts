@@ -1,5 +1,4 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DestroyRef, ElementRef, EventEmitter, HostListener, inject, Input, Output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, EventEmitter, HostListener, inject, Input, Output, signal } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { combineLatest, Observable, of } from 'rxjs';
 import { debounceTime, distinctUntilChanged, map, startWith } from 'rxjs/operators';
@@ -9,7 +8,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 @Component({
   selector: 'dropdown',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [ReactiveFormsModule],
   templateUrl: './dropdown.html',
   styleUrl: './dropdown.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -71,7 +70,6 @@ export class Dropdown {
   }
   private destroyRef = inject(DestroyRef);
   private el = inject(ElementRef)
-  private cdk = inject(ChangeDetectorRef)
 
   public isOpen = signal(false);
   public searchControl = new FormControl('');
@@ -86,7 +84,6 @@ export class Dropdown {
     } else if (this.mode === 'single' && this.selectedValues.length > 1) {
       this.selectedValues = [this.selectedValues[0]]
     }
-    this.cdk.markForCheck()
     this.change.emit([...this.selectedValues])
 
     this.searchControl.valueChanges.pipe(
@@ -183,7 +180,7 @@ export class Dropdown {
     if (this.isOpen()) {
       this.searchControl.setValue('');
       this.setInitialActiveIndex()
-      
+
     }
   }
 
