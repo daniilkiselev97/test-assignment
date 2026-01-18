@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { Dropdown } from './dropdown/dropdown';
 import { JsonPipe } from '@angular/common';
 import { districts, areas } from './data';
@@ -11,6 +11,7 @@ import { BehaviorSubject } from 'rxjs';
   imports: [Dropdown, JsonPipe],
   templateUrl: './app.html',
   styleUrl: './app.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class App {
   public selectedDistricts: string[] = [];
